@@ -185,6 +185,33 @@ local function hook_start_run()
     return true
 end
 
+SMODS.Keybind{
+	key = 'test_cards',
+	key_pressed = 'c', -- other key(s) that need to be held
+
+    action = function(self)
+        G.E_MANAGER:add_event(Event({
+            trigger = "after",
+            delay = 0,
+            blocking = false,
+            func = function ()
+                G.E_MANAGER:add_event(Event({
+                trigger = "after",
+                delay = 0,
+                blocking = false,
+                func = function ()
+                    sendDebugMessage("start second event")
+                    play_card(2)
+                    return true
+                end
+                }))
+            return true
+            end
+        }))
+    end,
+}
+
+
 function Hook:hook_game()
     if not neuro_profile or neuro_profile < 1 or neuro_profile > 3 then
         neuro_profile = 3

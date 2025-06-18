@@ -143,43 +143,97 @@ function PlayCards:_execute_action(state)
 	return true
 end
 
+ -- foil var localize: G.P_CENTERS.e_foil.config.extra
+local function get_edition_args(name,card_config)
+    sendDebugMessage(tprint(card_config,1,2))
+    local loc_args = {}
+    if name == "foil" then loc_args = {card_config.config.extra} end -- returns 50 as foil adds 50 chips
+    -- if name == "foil" then loc_args = {localize{type = 'name_text', key = 'e_foil', set='G.P_CENTERS.e_foil.config.extra'}} end
+    return loc_args
+end
+
 function PlayCards:_get_hand() -- G.hand.cards  G.play.cards
 	local cards = {}
 	for pos, card in ipairs(G.hand.cards) do -- Can get editions with card.edition / enhancements with card.ability / seal with card.seal
 
-        -- localize{type = 'descriptions', key = key_override or back.key, set = 'Back', nodes = loc_nodes, vars = loc_args}
-
         local name = card.base.name
+
+        sendDebugMessage("card edition " .. tostring(card.config))
+
+        if card.edition then
+            local key_override
+            for _, v in pairs(G.P_CENTER_POOLS.Edition) do
+                local loc_args,loc_nodes = get_edition_args(card.edition.type,G.P_CENTERS[v.key]), {} -- idk why G.P_CENTERS contains the extra's details but it works
+                sendDebugMessage("original_key: " .. tostring(v.original_key) .. " edition type: " .. tostring(card.edition.type))
+                sendDebugMessage(tprint(v,1,2))
+                sendDebugMessage("v: " .. tostring(v) .. " v type " .. type(v))
+                if v.original_key ~= card.edition.type then goto continue end
+                if v.loc_vars and type(v.loc_vars) == 'function' then
+                    -- local res = v:loc_vars() or {}
+                    loc_args = v.vars or loc_args
+                    key_override = v.key
+                    sendDebugMessage("key: " .. v.key .. " vars " .. tprint(loc_args,1,2))
+                    -- sendDebugMessage("loc_vars: " .. v:loc_vars())
+
+                    localize{type = "descriptions", set = 'Edition',key= key_override or card.key, nodes = loc_nodes, vars = loc_args}
+                    sendDebugMessage("loc_vars " .. tostring(card.loc_vars) .. " type " .. type(card.loc_vars))
+                    -- sendDebugMessage("override " .. key_override)
+
+                    sendDebugMessage("loc_args " .. tostring(loc_args[1]) .. " loc_nodes " .. tostring(loc_nodes[1]))
+
+                    local description = ""
+                    sendDebugMessage("before loc_nodes for " .. tostring(table.get_keys(loc_nodes)))
+                    for _, line in ipairs(loc_nodes) do
+                        for _, v in ipairs(line) do
+                            sendDebugMessage("Text: " .. v.config.text)
+                            description = description .. v.config.text
+                        end
+                        description = description
+                    end
+
+                    name = name .. description
+                end
+            ::continue::
+            end
+
+        -- for _, desc in pairs(G.P_CENTERS.e_foil) do
+        --     if desc.loc_vars and type(desc.loc_vars) == 'function' then
+        --         local res = desc:loc_vars() or {}
+        --         loc_args = res.vars or {}
+        --         key_override = res.key
+        --     end
+        -- end
+
 
         --TODO: change this to get from localize like select_deck
 
-        if card.ability.name == "Bonus Card" then
-            name = name .. " Enhancement: Bonus Card: +30 chips"
-        elseif card.ability.name == "Mult Card" then
-            name = name .. " Enhancement: Bonus Card: 	+4 Mult"
-        end
+        -- if card.ability.name == "Bonus Card" then
+        --     name = name .. " Enhancement: Bonus Card: +30 chips"
+        -- elseif card.ability.name == "Mult Card" then
+        --     name = name .. " Enhancement: Bonus Card: 	+4 Mult"
+        -- end
 
-        if edition == nil then
-            goto continue
-        end
+        -- if edition == nil then
+        --     goto continue
+        -- end
 
-        -- this should probably be changed for modding support but good enough for vanilla
-        if card.edition.foil then
-            name = name .. " edition: Foil: +50 chips when scored."
-        elseif card.edition.holo then
-            name = name .. " edition: Holographic: +10 Mult when scored."
-        elseif card.edition.polychrome then
-            name = name .. " edition: Polychrome: X1.5 Mult when scored."
-        elseif card.edition == nil then
-            name = name
-        end
+        -- -- this should probably be changed for modding support but good enough for vanilla
+        -- if card.edition.foil then
+        --     name = name .. " edition: Foil: +50 chips when scored."
+        -- elseif card.edition.holo then
+        --     name = name .. " edition: Holographic: +10 Mult when scored."
+        -- elseif card.edition.polychrome then
+        --     name = name .. " edition: Polychrome: X1.5 Mult when scored."
+        -- elseif card.edition == nil then
+        --     name = name
+        -- end
         -- elseif card.edition.negative then -- this is unused in vanilla (according to the wiki)
         --     name = " edition: Negative: +1 hand size"
 
-        ::continue::
 		cards[#cards+1] = name -- this will give to neuro as "{value} of {suit}"
-	end
-	return cards
+        end
+    end
+    return cards
 end
 
 -- self.edition
