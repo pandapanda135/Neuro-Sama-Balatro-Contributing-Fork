@@ -28,7 +28,7 @@ function PlayCards:_get_schema()
 			type = "array",
             items = {
 				type = "string",
-				enum = GetText:get_hand_editions()
+				enum = GetText:get_hand_seals() -- TODO: change to editions --GetText:get_hand_editions()
 			},
 		}
     })
@@ -68,7 +68,7 @@ function PlayCards:_validate_action(data, state)
 
     if #selected_hand > 5 then return ExecutionResult.failure("Cannot play more than 5 cards.") end
 
-	local hand = GetText:get_hand_editions() -- check hand to see if has selected more than are available
+	local hand = GetText:get_hand_enhancements() --TODO: change to editions later -- check hand to see if has selected more than are available
     local selected_amount = {}
     local hand_amount = {}
 
@@ -115,7 +115,7 @@ function PlayCards:_execute_action(state)
 
 
     local play_button = G.buttons:get_UIE_by_ID('play_button')
-    local hand_string = GetText:get_hand_editions()
+    local hand_string = GetText:get_hand_enhancements() -- TODO: change back to editions
     local hand = G.hand.cards
 
     for location, card in pairs(selected_hand) do
@@ -140,37 +140,6 @@ function PlayCards:_execute_action(state)
 
 	return true
 end
-
--- self.ability
-
--- bonus: integer,
--- burnt_hand: integer = 0,
--- caino_xmult: integer = 1,
--- consumeable: unknown,
--- d_size: integer = 0,
--- effect: unknown,
--- extra: table,
--- extra_value: integer = 0,
--- forced_selection: nil,
--- h_dollars: integer = 0,
--- h_mult: integer = 0,
--- h_size: integer = 0,
--- h_x_mult: integer = 0,
--- hands_played_at_create: integer = 0|1,
--- invis_rounds: integer = 0,
--- loyalty_remaining: unknown,
--- mult: integer = 0,
--- name: unknown,
--- order: nil,
--- p_dollars: integer = 0,
--- perma_bonus: integer = 0,
--- set: unknown,
--- t_chips: integer = 0,
--- t_mult: integer = 0,
--- to_do_poker_hand: unknown,
--- type: string = '',
--- x_mult: integer = 1,
--- yorick_discards: unknown,
 
 
 return PlayCards
