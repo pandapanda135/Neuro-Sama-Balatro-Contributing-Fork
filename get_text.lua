@@ -186,8 +186,14 @@ function getText:get_hand_enhancements()
             local key_override
             for _, v in pairs(G.P_CENTER_POOLS.Enhanced) do
                 local loc_args,loc_nodes = get_enhancements_args(card.ability.effect,G.P_CENTERS[v.key]), {}
-                if v.key ~= card.config.center_key then goto continue end -- go next loop if not the same as card
-                    key_override = v.key or card.config.center_key
+                if v.key ~= card.seal then goto continue end -- go next loop if not the same as card
+                    if v.loc_txt and type(v.loc_vars) == 'function' then -- not tested probably works though
+                        local res = v:loc_vars() or {}
+                        sendDebugMessage("res value: " .. tprint(res,1,2))
+                        loc_args = res.vars or {}
+                        key_override = v.key
+                    end
+                    key_override = v.key
 
                     localize{type = "descriptions", set = 'Enhanced',key= key_override or card.config.center_key, nodes = loc_nodes, vars = loc_args}  -- TODO: doesnt get + in mult card idk why
 
@@ -230,13 +236,39 @@ function getText:get_hand_seals()
         local name = card.base.name
 
         if card.ability.seal then
-            local key_override
+            local key_override = nil
             for _, v in pairs(G.P_CENTER_POOLS.Seal) do
-                local loc_args,loc_nodes = get_seals_args(card.seal), {}
+                sendDebugMessage("v key: " .. v.key)
+                -- if v.key == "seel_blu" then
+                --     test_args = v
+                --     sendDebugMessage("setting test args")
+                -- end
+                sendDebugMessage(tprint(v,1,2))
+                local loc_args,loc_nodes,loc_set = get_seals_args(card.seal), {}, 'Other'
                 if v.key ~= card.seal then goto continue end -- go next loop if not the same as card
-                    key_override = v.key
+                    if v.loc_txt and type(v.loc_vars) == 'function' then -- this is for modded seals
+                        local res = v:loc_vars() or {}
+                        sendDebugMessage("res value: " .. tprint(res,1,2))
+                        loc_args = res.vars or {}
+                        key_override = v.key
+                        loc_set = v.set
+                    else
+                        loc_args = get_seals_args(card.seal) -- this is for vanilla seals
+                        key_override = loc_args[1]
+                        loc_args = {}
+                        loc_set = 'Other' -- we need to do this because v.set would be Set which doesn't exist
+                    end
 
-                    localize{type = "descriptions", set = 'Other',key= loc_args[1], nodes = loc_nodes}
+                    -- key_override = v.key -- modded seals dont use loc_vars for key
+                    -- key_override = test_args.key
+
+                    -- loc_args = test_args.config
+                    -- local args_set = test_args.set -- "Other" on vanilla
+                    sendDebugMessage("loc_args: " .. tprint(loc_args,1,2) .. " Set: " .. loc_set .. " key: " .. tostring(key_override))
+                    -- key_override is nil ???
+                    localize{type = 'descriptions', set = loc_set or v.set, key= key_override or v.key, nodes = loc_nodes, vars = loc_args} --TODO: doesnt get for example modded
+
+                    sendDebugMessage("loc_nodes: " .. tprint(loc_nodes,1,2))
 
                     local description = ""
                     for _, line in ipairs(loc_nodes) do
