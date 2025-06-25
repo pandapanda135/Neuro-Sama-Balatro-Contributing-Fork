@@ -2,6 +2,7 @@ local GameHooks = ModCache.load("game-sdk/game_hooks.lua")
 local ActionWindow = ModCache.load("game-sdk/actions/action_window.lua")
 local SelectDeck = ModCache.load("custom-actions/select_deck.lua")
 local PlayCards = ModCache.load("custom-actions/play_cards.lua")
+local PickCard = ModCache.load("custom-actions/pick_pack_card.lua")
 
 local Hook = {}
 Hook.__index = Hook
@@ -75,6 +76,7 @@ local function play_card(delay)
     G.E_MANAGER:add_event(Event({
         trigger = "after",
         delay = delay,
+        blocking = false,
         func = function()
             local window = ActionWindow:new()
             window:add_action(PlayCards:new(window, nil))
@@ -84,6 +86,22 @@ local function play_card(delay)
     }
     ))
 end
+
+local function pick_pack_card(delay)
+    G.E_MANAGER:add_event(Event({
+        trigger = "after",
+        delay = delay,
+        blocking = false,
+        func = function()
+            local window = ActionWindow:new()
+            window:add_action(PickCard:new(window, nil))
+            window:register()
+            return true
+        end
+    }
+    ))
+end
+
 
 local function hook_main_menu()
     local main_menu = Game.main_menu
@@ -153,19 +171,21 @@ local function hook_main_menu()
     end
 end
 
-local function hook_start_run()
-    local start_run = Game.start_run
-    function Game:start_run(args)
-        start_run(self,args)
+-- works for basic runs keeping for testing
+local function hook_draw_from_hand()
+    local draw_from_deck = G.FUNCS.draw_from_deck_to_hand
+    function G.FUNCS:draw_from_deck_to_hand(e)
+        draw_from_deck(e)
 
+        sendDebugMessage("draw_card called")
         G.E_MANAGER:add_event(Event({
             trigger = "after",
-            delay = 4,
             blocking = false,
             func = function ()
+                sendDebugMessage("start first event " .. #G.hand.cards)
                 G.E_MANAGER:add_event(Event({
                 trigger = "after",
-                delay = 4,
+                delay = 0,
                 blocking = false,
                 func = function ()
                     sendDebugMessage("start second event")
@@ -181,7 +201,46 @@ local function hook_start_run()
     return true
 end
 
--- call play_card after selecting first bind
+-- TODO: Stop spamming of running event / sending actions while it does get handled the fact it happens is still suboptimal
+-- TODO: Add checks for current state this can be done with G.STATE a good example of this is in G.FUNCS.draw_from_deck_to_hand
+local function hook_draw_card()
+    local original_draw_card = draw_card
+    function draw_card(from, to, percent, dir, sort, card, delay, mute, stay_flipped, vol, discarded_only)
+        original_draw_card(from, to, percent, dir, sort, card, delay, mute, stay_flipped, vol, discarded_only)
+
+        sendDebugMessage("draw_card called")
+        G.E_MANAGER:add_event(Event({
+            trigger = "after",
+            blocking = false,
+            func = function ()
+                    sendDebugMessage("start second event")
+                    if G.STATE == G.STATES.SPECTRAL_PACK then
+                        pick_pack_card(12)
+                    elseif G.STATE == G.STATES.TAROT_PACK then
+                        -- Will probably be its own action
+                    elseif G.STATE == G.STATES.BUFFOON_PACK then -- joker
+                        pick_pack_card(12)
+                    elseif G.STATE == G.STATES.PLANET_PACK then
+                        pick_pack_card(20)
+                    elseif G.STATE == G.STATES.STANDARD_PACK then -- card pack
+                        pick_pack_card(12)
+                    elseif G.STATE == 999 then -- this is equal to SMODS_BOOSTER_OPENED, I just couldn't find it
+                        pick_pack_card(16)
+                    elseif G.STATE == G.STATES.SELECTING_HAND then -- this sounds like drawing hand
+                        play_card(14)
+                    else
+                        sendDebugMessage("In a state that hook_draw_cards does not handle, the current state is: " .. tostring(G.STATE))
+                        for k, v in pairs(G.STATES) do
+                            sendDebugMessage("Key: " .. k .. " Value: " .. v)
+                        end
+                    end
+                return true
+            end
+        }))
+    end
+    return true
+end
+
 SMODS.Keybind{
 	key = 'test_cards',
 	key_pressed = 'c',
@@ -208,7 +267,6 @@ SMODS.Keybind{
     end,
 }
 
-
 function Hook:hook_game()
     if not neuro_profile or neuro_profile < 1 or neuro_profile > 3 then
         neuro_profile = 3
@@ -225,7 +283,7 @@ function Hook:hook_game()
 
     hook_main_menu()
 
-    hook_start_run()
+    hook_draw_card()
 end
 
 return Hook
