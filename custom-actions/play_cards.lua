@@ -24,10 +24,10 @@ end
 
 
 local function get_cards_modifiers() -- get names then add appropriate descriptions
-    local cards = GetText:get_hand_names()
-    local editions = GetText:get_hand_editions()
-    local enhancements = GetText:get_hand_enhancements()
-    local seals = GetText:get_hand_seals()
+    local cards = GetText:get_hand_names(G.hand.cards)
+    local editions = GetText:get_hand_editions(G.hand.cards)
+    local enhancements = GetText:get_hand_enhancements(G.hand.cards)
+    local seals = GetText:get_hand_seals(G.hand.cards)
 
     for i = 1, #cards do
         local name = cards[i] or ""

@@ -102,6 +102,21 @@ local function pick_pack_card(delay)
     ))
 end
 
+-- use for tarot and spectral
+local function pick_pack_card_and_hand(delay)
+    G.E_MANAGER:add_event(Event({
+        trigger = "after",
+        delay = delay,
+        blocking = false,
+        func = function()
+            local window = ActionWindow:new()
+            window:add_action(PickCard:new(window, nil))
+            window:register()
+            return true
+        end
+    }
+    ))
+end
 
 local function hook_main_menu()
     local main_menu = Game.main_menu
@@ -223,9 +238,9 @@ local function hook_draw_card()
                     elseif G.STATE == G.STATES.PLANET_PACK then
                         pick_pack_card(20)
                     elseif G.STATE == G.STATES.STANDARD_PACK then -- card pack
-                        pick_pack_card(12)
+                        pick_pack_card(20)
                     elseif G.STATE == 999 then -- this is equal to SMODS_BOOSTER_OPENED, I just couldn't find it
-                        pick_pack_card(16)
+                        pick_pack_card(20)
                     elseif G.STATE == G.STATES.SELECTING_HAND then -- this sounds like drawing hand
                         play_card(14)
                     else
